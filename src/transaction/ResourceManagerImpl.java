@@ -177,29 +177,10 @@ public class ResourceManagerImpl extends java.rmi.server.UnicastRemoteObject imp
 
     public boolean reconnect()
     {
-        Properties prop = new Properties();
+        String lookUpName = Util.getLookupName(TransactionManager.RMIName);
         try
         {
-            prop.load(new FileInputStream("conf/ddb.conf"));
-        }
-        catch (Exception e1)
-        {
-            e1.printStackTrace();
-            return false;
-        }
-        String rmiPort = prop.getProperty("tm.port");
-        if (rmiPort == null)
-        {
-            rmiPort = "";
-        }
-        else if (!rmiPort.equals(""))
-        {
-            rmiPort = "//:" + rmiPort + "/";
-        }
-
-        try
-        {
-            tm = (TransactionManager) Naming.lookup(rmiPort + TransactionManager.RMIName);
+            tm = (TransactionManager) Naming.lookup(lookUpName);
             System.out.println(myRMIName + "'s xids is Empty ? " + xids.isEmpty());
             for (Iterator iter = xids.iterator(); iter.hasNext();)
             {

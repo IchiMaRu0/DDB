@@ -23,29 +23,24 @@ public class RMManagerCars {
 
 	public static void main(String[] args) {
 		String rmiName = ResourceManager.RMINameCars;
-
-		Properties prop = new Properties();
-		try {
-			prop.load(new FileInputStream("conf/ddb.conf"));
-		} catch (Exception e1) {
-			e1.printStackTrace();
-			return;
+		if (rmiName == null || rmiName.equals("")) {
+			System.err.println("No RMI name given");
+			System.exit(1);
+		}
+		String rmiPort = Util.getRMIPort(rmiName);
+		if (rmiPort == null || rmiPort.equals("")) {
+			System.err.println("No RMI port given");
+			System.exit(1);
 		}
 
-		String rmiPort = prop.getProperty("rm." + rmiName + ".port");
-
 		try {
-			_rmiRegistry = LocateRegistry.createRegistry(Integer
-					.parseInt(rmiPort));
+			_rmiRegistry = LocateRegistry.createRegistry(Integer.parseInt(rmiPort));
 		} catch (RemoteException e2) {
 			e2.printStackTrace();
 			return;
 		}
 
-		if (rmiName == null || rmiName.equals("")) {
-			System.err.println("No RMI name given");
-			System.exit(1);
-		}
+
 
 		ResourceManagerImpl obj = null;
 		try {

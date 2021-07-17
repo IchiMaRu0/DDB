@@ -12,30 +12,11 @@ import java.util.Properties;
 public class Client {
     
     public static void main(String args[]) {
-        Properties prop = new Properties();
-        try
-        {
-            prop.load(new FileInputStream("conf/ddb.conf"));
-        }
-        catch (Exception e1)
-        {
-            e1.printStackTrace();
-            return;
-        }
-        String rmiPort = prop.getProperty("wc.port");
-        if (rmiPort == null)
-        {
-            rmiPort = "";
-        }
-        else if (!rmiPort.equals(""))
-        {
-            rmiPort = "//:" + rmiPort + "/";
-        }
 
         WorkflowController wc = null;
         try
         {
-            wc = (WorkflowController) Naming.lookup(rmiPort + WorkflowController.RMIName);
+            wc = (WorkflowController) Naming.lookup(Util.getLookupName(WorkflowController.RMIName));
             System.out.println("Bound to WC");
         }
         catch (Exception e)

@@ -23,30 +23,21 @@ public class RMManagerCustomers {
 
 	public static void main(String[] args) {
 		String rmiName = ResourceManager.RMINameCustomers;
-		
-        Properties prop = new Properties();
-        try
-        {
-            prop.load(new FileInputStream("conf/ddb.conf"));
-        }
-        catch (Exception e1)
-        {
-            e1.printStackTrace();
-            return;
-        }
-
-		String rmiPort = prop.getProperty("rm." + rmiName + ".port");
+		if (rmiName == null || rmiName.equals("")) {
+			System.err.println("No RMI name given");
+			System.exit(1);
+		}
+		String rmiPort = Util.getRMIPort(rmiName);
+		if (rmiPort == null || rmiPort.equals("")) {
+			System.err.println("No RMI port given");
+			System.exit(1);
+		}
 		
 		try {
 			_rmiRegistry = LocateRegistry.createRegistry(Integer.parseInt(rmiPort));
 		} catch (RemoteException e2) {
 			e2.printStackTrace();
 			return;
-		}
-
-		if (rmiName == null || rmiName.equals("")) {
-			System.err.println("No RMI name given");
-			System.exit(1);
 		}
 
 		try {

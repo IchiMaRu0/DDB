@@ -3,6 +3,8 @@ package transaction;
 import java.rmi.Naming;
 import java.rmi.RMISecurityManager;
 import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
 
 /** 
  * Workflow Controller for the Distributed Travel Reservation System.
@@ -12,9 +14,7 @@ import java.rmi.RemoteException;
  * instead of doing the things itself.
  */
 
-public class WorkflowControllerImpl
-    extends java.rmi.server.UnicastRemoteObject
-    implements WorkflowController {
+public class WorkflowControllerImpl extends java.rmi.server.UnicastRemoteObject implements WorkflowController {
 
     protected int flightcounter, flightprice, carscounter, carsprice, roomscounter, roomsprice; 
     protected int xidCounter;
@@ -24,43 +24,54 @@ public class WorkflowControllerImpl
     protected ResourceManager rmCars = null;
     protected ResourceManager rmCustomers = null;
     protected TransactionManager tm = null;
+	static Registry _rmiRegistry = null;
 
     public static void main(String args[]) {
-	System.setSecurityManager(new RMISecurityManager());
 
-	String rmiPort = System.getProperty("rmiPort");
-	if (rmiPort == null) {
-	    rmiPort = "";
-	} else if (!rmiPort.equals("")) {
-	    rmiPort = "//:" + rmiPort + "/";
-	}
+//		System.setSecurityManager(new RMISecurityManager());
+		String rmiName = WorkflowController.RMIName;
+		if (rmiName == null || rmiName.equals("")) {
+			System.err.println("No RMI name given");
+			System.exit(1);
+		}
+		String rmiPort = Util.getRMIPort(rmiName);
+		if (rmiPort == null || rmiPort.equals("")) {
+			System.err.println("No RMI port given");
+			System.exit(1);
+		}
+		try {
+			_rmiRegistry = LocateRegistry.createRegistry(Integer.parseInt(rmiPort));
+		} catch (RemoteException e2) {
+			e2.printStackTrace();
+			return;
+		}
 
-	try {
-	    WorkflowControllerImpl obj = new WorkflowControllerImpl();
-	    Naming.rebind(rmiPort + WorkflowController.RMIName, obj);
-	    System.out.println("WC bound");
+		try {
+			WorkflowControllerImpl obj = new WorkflowControllerImpl();
+			_rmiRegistry.bind(rmiName, obj);
+			System.out.println("WC bound");
+		}
+		catch (Exception e) {
+			System.err.println("WC not bound:" + e);
+			System.exit(1);
+		}
 	}
-	catch (Exception e) {
-	    System.err.println("WC not bound:" + e);
-	    System.exit(1);
-	}
-    }
     
     
     public WorkflowControllerImpl() throws RemoteException {
-	flightcounter = 0;
-	flightprice = 0;
-	carscounter = 0;
-	carsprice = 0;
-	roomscounter = 0;
-	roomsprice = 0;
-	flightprice = 0;
+		flightcounter = 0;
+		flightprice = 0;
+		carscounter = 0;
+		carsprice = 0;
+		roomscounter = 0;
+		roomsprice = 0;
+		flightprice = 0;
 
-	xidCounter = 1;
+		xidCounter = 1;
 
-	while (!reconnect()) {
-	    // would be better to sleep a while
-	} 
+		while (!reconnect()) {
+			// would be better to sleep a while
+		}
     }
 
 
@@ -232,53 +243,41 @@ public class WorkflowControllerImpl
     }
 
     // TECHNICAL/TESTING INTERFACE
-    public boolean reconnect()
-	throws RemoteException {
-	String rmiPort = System.getProperty("rmiPort");
-	if (rmiPort == null) {
-	    rmiPort = "";
-	} else if (!rmiPort.equals("")) {
-	    rmiPort = "//:" + rmiPort + "/";
-	}
+    public boolean reconnect() throws RemoteException {
 
-	try {
-	    rmFlights =
-		(ResourceManager)Naming.lookup(rmiPort +
-					       ResourceManager.RMINameFlights);
-	    System.out.println("WC bound to RMFlights");
-	    rmRooms =
-		(ResourceManager)Naming.lookup(rmiPort +
-					       ResourceManager.RMINameRooms);
-	    System.out.println("WC bound to RMRooms");
-	    rmCars =
-		(ResourceManager)Naming.lookup(rmiPort +
-					       ResourceManager.RMINameCars);
-	    System.out.println("WC bound to RMCars");
-	    rmCustomers =
-		(ResourceManager)Naming.lookup(rmiPort +
-					       ResourceManager.RMINameCustomers);
-	    System.out.println("WC bound to RMCustomers");
-	    tm =
-		(TransactionManager)Naming.lookup(rmiPort +
-						  TransactionManager.RMIName);
-	    System.out.println("WC bound to TM");
-	} 
-	catch (Exception e) {
-	    System.err.println("WC cannot bind to some component:" + e);
-	    return false;
-	}
+		try {
+			rmFlights =
+			(ResourceManager)Naming.lookup(Util.getLookupName(ResourceManager.RMINameFlights));
+			System.out.println("WC bound to RMFlights");
+			rmRooms =
+			(ResourceManager)Naming.lookup(Util.getLookupName(ResourceManager.RMINameRooms));
+			System.out.println("WC bound to RMRooms");
+			rmCars =
+			(ResourceManager)Naming.lookup(Util.getLookupName(ResourceManager.RMINameCars));
+			System.out.println("WC bound to RMCars");
+			rmCustomers =
+			(ResourceManager)Naming.lookup(Util.getLookupName(ResourceManager.RMINameCustomers));
+			System.out.println("WC bound to RMCustomers");
+			tm =
+			(TransactionManager)Naming.lookup(Util.getLookupName(TransactionManager.RMIName));
+			System.out.println("WC bound to TM");
+		}
+		catch (Exception e) {
+			System.err.println("WC cannot bind to some component:" + e);
+			return false;
+		}
 
-	try {
-	    if (rmFlights.reconnect() && rmRooms.reconnect() &&
-		rmCars.reconnect() && rmCustomers.reconnect()) {
-		return true;
-	    }
-	} catch (Exception e) {
-	    System.err.println("Some RM cannot reconnect:" + e);
-	    return false;
-	}
+		try {
+			if (rmFlights.reconnect() && rmRooms.reconnect() &&
+			rmCars.reconnect() && rmCustomers.reconnect()) {
+			return true;
+			}
+		} catch (Exception e) {
+			System.err.println("Some RM cannot reconnect:" + e);
+			return false;
+		}
 
-	return false;
+		return false;
     }
 
     public boolean dieNow(String who)

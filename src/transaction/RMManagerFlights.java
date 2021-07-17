@@ -23,19 +23,15 @@ public class RMManagerFlights {
 
 	public static void main(String[] args) {
 		String rmiName = ResourceManager.RMINameFlights;
-		
-        Properties prop = new Properties();
-        try
-        {
-            prop.load(new FileInputStream("conf/ddb.conf"));
-        }
-        catch (Exception e1)
-        {
-            e1.printStackTrace();
-            return;
-        }
-        
-		String rmiPort = prop.getProperty("rm." + rmiName + ".port");
+		if (rmiName == null || rmiName.equals("")) {
+			System.err.println("No RMI name given");
+			System.exit(1);
+		}
+		String rmiPort = Util.getRMIPort(rmiName);
+		if (rmiPort == null || rmiPort.equals("")) {
+			System.err.println("No RMI port given");
+			System.exit(1);
+		}
 		
 		try {
 			_rmiRegistry = LocateRegistry.createRegistry(Integer.parseInt(rmiPort));
@@ -44,10 +40,6 @@ public class RMManagerFlights {
 			return;
 		}
 
-		if (rmiName == null || rmiName.equals("")) {
-			System.err.println("No RMI name given");
-			System.exit(1);
-		}
 
 		try {
 			ResourceManagerImpl obj = new ResourceManagerImpl(rmiName);
