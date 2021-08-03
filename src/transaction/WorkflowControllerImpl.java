@@ -10,6 +10,7 @@ import java.rmi.RMISecurityManager;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.rmi.server.ExportException;
 import java.util.Set;
 
 /**
@@ -106,15 +107,56 @@ public class WorkflowControllerImpl extends java.rmi.server.UnicastRemoteObject 
         xids.remove(xid);
     }
 
+    public ResourceItem queryItem(ResourceManager rm, int xid, String key)
+            throws RemoteException,
+            TransactionAbortedException,
+            InvalidTransactionException {
+        if (!xids.contains(xid))
+            throw new InvalidTransactionException(xid, "");
+        ResourceItem resourceItem;
+        try {
+            resourceItem = rm.query(xid, rm.getID(), key);
+        } catch (DeadlockException e) {
+            abort(xid);
+            throw new TransactionAbortedException(xid, e.getMessage());
+        }
+        return resourceItem;
+    }
+
 
     // ADMINISTRATIVE INTERFACE
     public boolean addFlight(int xid, String flightNum, int numSeats, int price)
             throws RemoteException,
             TransactionAbortedException,
             InvalidTransactionException {
-        flightcounter += numSeats;
-        flightprice = price;
-        return true;
+        if (!xids.contains(xid))
+            throw new InvalidTransactionException(xid, "addFlight");
+        if (flightNum == null)
+            return false;
+        if (numSeats < 0)
+            return false;
+        ResourceItem resourceItem = queryItem(rmFlights, xid, flightNum);
+        if (resourceItem == null) {
+            price = Math.max(0, price);
+            Flight flight = new Flight(flightNum, price, numSeats);
+            try {
+                return rmFlights.insert(xid, rmFlights.getID(), flight);
+            } catch (DeadlockException e) {
+                abort(xid);
+                throw new TransactionAbortedException(xid, e.getMessage());
+            }
+        } else {
+            Flight flight = (Flight) resourceItem;
+            flight.addSeats(numSeats);
+            if (price >= 0)
+                flight.setPrice(price);
+            try {
+                return rmFlights.update(xid, rmFlights.getID(), flightNum, flight);
+            } catch (DeadlockException e) {
+                abort(xid);
+                throw new TransactionAbortedException(xid, e.getMessage());
+            }
+        }
     }
 
     public boolean deleteFlight(int xid, String flightNum)
@@ -130,9 +172,34 @@ public class WorkflowControllerImpl extends java.rmi.server.UnicastRemoteObject 
             throws RemoteException,
             TransactionAbortedException,
             InvalidTransactionException {
-        roomscounter += numRooms;
-        roomsprice = price;
-        return true;
+        if (!xids.contains(xid))
+            throw new InvalidTransactionException(xid, "addRooms");
+        if (location == null)
+            return false;
+        if (numRooms < 0)
+            return false;
+        ResourceItem resourceItem = queryItem(rmRooms, xid, location);
+        if (resourceItem == null) {
+            price = Math.max(0, price);
+            Hotel hotel = new Hotel(location, price, numRooms);
+            try {
+                return rmRooms.insert(xid, rmRooms.getID(), hotel);
+            } catch (DeadlockException e) {
+                abort(xid);
+                throw new TransactionAbortedException(xid, e.getMessage());
+            }
+        } else {
+            Hotel hotel = (Hotel) resourceItem;
+            hotel.addRooms(numRooms);
+            if (price >= 0)
+                hotel.setPrice(price);
+            try {
+                return rmRooms.update(xid, rmRooms.getID(), location, hotel);
+            } catch (DeadlockException e) {
+                abort(xid);
+                throw new TransactionAbortedException(xid, e.getMessage());
+            }
+        }
     }
 
     public boolean deleteRooms(int xid, String location, int numRooms)
@@ -186,17 +253,10 @@ public class WorkflowControllerImpl extends java.rmi.server.UnicastRemoteObject 
             throw new InvalidTransactionException(xid, "queryFlight");
         if (flightNum == null)
             return -1;
-        try {
-            String rmiName = rmFlights.getID();
-            ResourceItem resourceItem = rmFlights.query(xid, rmiName, flightNum);
-            if (resourceItem == null)
-                return -1;
-            int numAvail = ((Flight) resourceItem).getNumAvail();
-            return numAvail;
-        } catch (DeadlockException e) {
-            abort(xid);
-            throw new TransactionAbortedException(xid, e.getMessage());
-        }
+        ResourceItem resourceItem = queryItem(rmFlights, xid, flightNum);
+        if (resourceItem == null)
+            return -1;
+        return ((Flight) resourceItem).getNumAvail();
     }
 
     public int queryFlightPrice(int xid, String flightNum)
@@ -207,17 +267,10 @@ public class WorkflowControllerImpl extends java.rmi.server.UnicastRemoteObject 
             throw new InvalidTransactionException(xid, "queryFlightPrice");
         if (flightNum == null)
             return -1;
-        try {
-            String rmiName = rmFlights.getID();
-            ResourceItem resourceItem = rmFlights.query(xid, rmiName, flightNum);
-            if (resourceItem == null)
-                return -1;
-            int price = ((Flight) resourceItem).getPrice();
-            return price;
-        } catch (DeadlockException e) {
-            abort(xid);
-            throw new TransactionAbortedException(xid, e.getMessage());
-        }
+        ResourceItem resourceItem = queryItem(rmFlights, xid, flightNum);
+        if (resourceItem == null)
+            return -1;
+        return ((Flight) resourceItem).getPrice();
     }
 
     public int queryRooms(int xid, String location)
@@ -228,17 +281,10 @@ public class WorkflowControllerImpl extends java.rmi.server.UnicastRemoteObject 
             throw new InvalidTransactionException(xid, "queryRooms");
         if (location == null)
             return -1;
-        try {
-            String rmiName = rmRooms.getID();
-            ResourceItem resourceItem = rmRooms.query(xid, rmiName, location);
-            if (resourceItem == null)
-                return -1;
-            int numAvail = ((Hotel)resourceItem).getNumAvail();
-            return numAvail;
-        } catch (DeadlockException e) {
-            abort(xid);
-            throw new TransactionAbortedException(xid, e.getMessage());
-        }
+        ResourceItem resourceItem = queryItem(rmRooms, xid, location);
+        if (resourceItem == null)
+            return -1;
+        return ((Hotel) resourceItem).getNumAvail();
     }
 
     public int queryRoomsPrice(int xid, String location)
@@ -249,17 +295,10 @@ public class WorkflowControllerImpl extends java.rmi.server.UnicastRemoteObject 
             throw new InvalidTransactionException(xid, "queryRoomsPrice");
         if (location == null)
             return -1;
-        try {
-            String rmiName = rmRooms.getID();
-            ResourceItem resourceItem = rmRooms.query(xid, rmiName, location);
-            if (resourceItem == null)
-                return -1;
-            int numAvail = ((Hotel)resourceItem).getPrice();
-            return numAvail;
-        } catch (DeadlockException e) {
-            abort(xid);
-            throw new TransactionAbortedException(xid, e.getMessage());
-        }
+        ResourceItem resourceItem = queryItem(rmRooms, xid, location);
+        if (resourceItem == null)
+            return -1;
+        return ((Hotel) resourceItem).getPrice();
     }
 
     public int queryCars(int xid, String location)
@@ -270,17 +309,10 @@ public class WorkflowControllerImpl extends java.rmi.server.UnicastRemoteObject 
             throw new InvalidTransactionException(xid, "queryCars");
         if (location == null)
             return -1;
-        try {
-            String rmiName = rmCars.getID();
-            ResourceItem resourceItem = rmCars.query(xid, rmiName, location);
-            if (resourceItem == null)
-                return -1;
-            int numAvail = ((Car)resourceItem).getNumAvail();
-            return numAvail;
-        } catch (DeadlockException e) {
-            abort(xid);
-            throw new TransactionAbortedException(xid, e.getMessage());
-        }
+        ResourceItem resourceItem = queryItem(rmCars, xid, location);
+        if (resourceItem == null)
+            return -1;
+        return ((Car) resourceItem).getNumAvail();
     }
 
     public int queryCarsPrice(int xid, String location)
@@ -291,17 +323,10 @@ public class WorkflowControllerImpl extends java.rmi.server.UnicastRemoteObject 
             throw new InvalidTransactionException(xid, "queryCarsPrice");
         if (location == null)
             return -1;
-        try {
-            String rmiName = rmCars.getID();
-            ResourceItem resourceItem = rmCars.query(xid, rmiName, location);
-            if (resourceItem == null)
-                return -1;
-            int numAvail = ((Car)resourceItem).getPrice();
-            return numAvail;
-        } catch (DeadlockException e) {
-            abort(xid);
-            throw new TransactionAbortedException(xid, e.getMessage());
-        }
+        ResourceItem resourceItem = queryItem(rmCars, xid, location);
+        if (resourceItem == null)
+            return -1;
+        return ((Car) resourceItem).getPrice();
     }
 
     public int queryCustomerBill(int xid, String custName)
