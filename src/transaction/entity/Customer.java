@@ -20,10 +20,6 @@ public class Customer implements ResourceItem {
         this.customerName = customerName;
     }
 
-    public Customer() {
-        super();
-    }
-
     @Override
     public String[] getColumnNames() {
         return new String[0];

@@ -2,6 +2,7 @@ package transaction;
 
 import lockmgr.DeadlockException;
 import transaction.entity.Car;
+import transaction.entity.Customer;
 import transaction.entity.Flight;
 import transaction.entity.Hotel;
 
@@ -258,7 +259,18 @@ public class WorkflowControllerImpl extends java.rmi.server.UnicastRemoteObject 
             throws RemoteException,
             TransactionAbortedException,
             InvalidTransactionException {
-        return true;
+        if (!xids.contains(xid))
+            throw new InvalidTransactionException(xid, "newCustomer");
+        ResourceItem resourceItem = queryItem(rmCustomers, xid, custName);
+        if (resourceItem != null)
+            return true;
+        Customer customer = new Customer(custName);
+        try {
+            return rmCustomers.insert(xid, rmCustomers.getID(), customer);
+        } catch (DeadlockException e) {
+            abort(xid);
+            throw new TransactionAbortedException(xid, e.getMessage());
+        }
     }
 
     public boolean deleteCustomer(int xid, String custName)
