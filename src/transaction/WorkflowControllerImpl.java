@@ -215,9 +215,34 @@ public class WorkflowControllerImpl extends java.rmi.server.UnicastRemoteObject 
             throws RemoteException,
             TransactionAbortedException,
             InvalidTransactionException {
-        carscounter += numCars;
-        carsprice = price;
-        return true;
+        if (!xids.contains(xid))
+            throw new InvalidTransactionException(xid, "addCars");
+        if (location == null)
+            return false;
+        if (numCars < 0)
+            return false;
+        ResourceItem resourceItem = queryItem(rmCars, xid, location);
+        if (resourceItem == null) {
+            price = Math.max(0, price);
+            Car car = new Car(location, price, numCars);
+            try {
+                return rmCars.insert(xid, rmCars.getID(), car);
+            } catch (DeadlockException e) {
+                abort(xid);
+                throw new TransactionAbortedException(xid, e.getMessage());
+            }
+        } else {
+            Car car = (Car) resourceItem;
+            car.addCars(numCars);
+            if (price >= 0)
+                car.setPrice(price);
+            try {
+                return rmCars.update(xid, rmCars.getID(), location, car);
+            } catch (DeadlockException e) {
+                abort(xid);
+                throw new TransactionAbortedException(xid, e.getMessage());
+            }
+        }
     }
 
     public boolean deleteCars(int xid, String location, int numCars)
