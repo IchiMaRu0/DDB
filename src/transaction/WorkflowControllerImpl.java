@@ -7,6 +7,7 @@ import java.rmi.Naming;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.rmi.server.ExportException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
@@ -472,7 +473,45 @@ public class WorkflowControllerImpl extends java.rmi.server.UnicastRemoteObject 
             throws RemoteException,
             TransactionAbortedException,
             InvalidTransactionException {
-        return 0;
+        if (!xids.contains(xid))
+            throw new InvalidTransactionException(xid, "queryCustomerBill");
+        if (custName == null)
+            return -1;
+        ResourceItem resourceItem = queryItem(rmCustomers, xid, custName);
+        if (resourceItem == null)
+            return -1;
+        Collection<ResourceItem> resvs = null;
+        try {
+            resvs = rmCustomers.query(xid, ResourceManager.TableNameReservations, Reservation.INDEX_CUSTNAME, custName);
+        } catch (DeadlockException e) {
+            abort(xid);
+            throw new TransactionAbortedException(xid, e.getMessage());
+        } catch (InvalidIndexException e) {
+            System.err.println(e.getMessage());
+        }
+        if (resvs == null)
+            return 0;
+        int total = 0;
+        for (ResourceItem item : resvs) {
+            Reservation resv = (Reservation) item;
+            String resvKey = resv.getResvKey();
+            int resvType = resv.getResvType();
+            switch (resvType) {
+                case Reservation.RESERVATION_TYPE_FLIGHT: {
+                    Flight flight = (Flight) queryItem(rmFlights, xid, resvKey);
+                    total += flight.getPrice();
+                }
+                case Reservation.RESERVATION_TYPE_HOTEL: {
+                    Hotel hotel = (Hotel) queryItem(rmRooms, xid, resvKey);
+                    total += hotel.getPrice();
+                }
+                case Reservation.RESERVATION_TYPE_CAR: {
+                    Car car = (Car) queryItem(rmCars, xid, resvKey);
+                    total += car.getPrice();
+                }
+            }
+        }
+        return total;
     }
 
 
@@ -481,7 +520,28 @@ public class WorkflowControllerImpl extends java.rmi.server.UnicastRemoteObject 
             throws RemoteException,
             TransactionAbortedException,
             InvalidTransactionException {
-        flightcounter--;
+        if (!xids.contains(xid))
+            throw new InvalidTransactionException(xid, "reserveFlight");
+        if (custName == null || flightNum == null)
+            return false;
+        ResourceItem c = queryItem(rmCustomers, xid, custName);
+        if (c == null)
+            return false;
+        ResourceItem f = queryItem(rmFlights, xid, flightNum);
+        if (f == null)
+            return false;
+        Flight flight = (Flight) f;
+        if (flight.getNumAvail() <= 0)
+            return false;
+        Reservation resv = new Reservation(custName, Reservation.RESERVATION_TYPE_FLIGHT, flightNum);
+        try {
+            rmCustomers.insert(xid, ResourceManager.TableNameReservations, resv);
+            flight.addResv();
+            rmFlights.update(xid, rmFlights.getID(), flightNum, flight);
+        } catch (DeadlockException e) {
+            abort(xid);
+            throw new TransactionAbortedException(xid, e.getMessage());
+        }
         return true;
     }
 
@@ -489,7 +549,28 @@ public class WorkflowControllerImpl extends java.rmi.server.UnicastRemoteObject 
             throws RemoteException,
             TransactionAbortedException,
             InvalidTransactionException {
-        carscounter--;
+        if (!xids.contains(xid))
+            throw new InvalidTransactionException(xid, "reserveCar");
+        if (custName == null || location == null)
+            return false;
+        ResourceItem cus = queryItem(rmCustomers, xid, custName);
+        if (cus == null)
+            return false;
+        ResourceItem c = queryItem(rmCars, xid, location);
+        if (c == null)
+            return false;
+        Car car = (Car) c;
+        if (car.getNumAvail() <= 0)
+            return false;
+        Reservation resv = new Reservation(custName, Reservation.RESERVATION_TYPE_CAR, location);
+        try {
+            rmCustomers.insert(xid, ResourceManager.TableNameReservations, resv);
+            car.addResv();
+            rmCars.update(xid, rmCars.getID(), location, car);
+        } catch (DeadlockException e) {
+            abort(xid);
+            throw new TransactionAbortedException(xid, e.getMessage());
+        }
         return true;
     }
 
@@ -497,7 +578,28 @@ public class WorkflowControllerImpl extends java.rmi.server.UnicastRemoteObject 
             throws RemoteException,
             TransactionAbortedException,
             InvalidTransactionException {
-        roomscounter--;
+        if (!xids.contains(xid))
+            throw new InvalidTransactionException(xid, "reserveRoom");
+        if (custName == null || location == null)
+            return false;
+        ResourceItem c = queryItem(rmCustomers, xid, custName);
+        if (c == null)
+            return false;
+        ResourceItem h = queryItem(rmRooms, xid, location);
+        if (h == null)
+            return false;
+        Hotel hotel = (Hotel) h;
+        if (hotel.getNumAvail() <= 0)
+            return false;
+        Reservation resv = new Reservation(custName, Reservation.RESERVATION_TYPE_HOTEL, location);
+        try {
+            rmCustomers.insert(xid, ResourceManager.TableNameReservations, resv);
+            hotel.addResv();
+            rmRooms.update(xid, rmRooms.getID(), location, hotel);
+        } catch (DeadlockException e) {
+            abort(xid);
+            throw new TransactionAbortedException(xid, e.getMessage());
+        }
         return true;
     }
 
