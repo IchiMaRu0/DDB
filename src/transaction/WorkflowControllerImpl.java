@@ -21,10 +21,6 @@ import java.util.Set;
  */
 
 public class WorkflowControllerImpl extends java.rmi.server.UnicastRemoteObject implements WorkflowController {
-
-    protected int flightcounter, flightprice, carscounter, carsprice, roomscounter, roomsprice;
-    protected int xidCounter;
-
     protected ResourceManager rmFlights = null;
     protected ResourceManager rmRooms = null;
     protected ResourceManager rmCars = null;
@@ -33,6 +29,7 @@ public class WorkflowControllerImpl extends java.rmi.server.UnicastRemoteObject 
     static Registry _rmiRegistry = null;
 
     protected Set<Integer> xids;
+    protected String xidsLog = "data/xids.log";
 
     public static void main(String args[]) {
 
@@ -66,18 +63,13 @@ public class WorkflowControllerImpl extends java.rmi.server.UnicastRemoteObject 
 
 
     public WorkflowControllerImpl() throws RemoteException {
-        flightcounter = 0;
-        flightprice = 0;
-        carscounter = 0;
-        carsprice = 0;
-        roomscounter = 0;
-        roomsprice = 0;
-        flightprice = 0;
-
-        xidCounter = 1;
-
         while (!reconnect()) {
             // would be better to sleep a while
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException ignored) {
+
+            }
         }
     }
 
@@ -86,6 +78,7 @@ public class WorkflowControllerImpl extends java.rmi.server.UnicastRemoteObject 
     public int start() throws RemoteException {
         int xid = tm.start();
         xids.add(xid);
+        Util.storeObject(xids,xidsLog);
         return xid;
     }
 
@@ -93,8 +86,12 @@ public class WorkflowControllerImpl extends java.rmi.server.UnicastRemoteObject 
             throws RemoteException,
             TransactionAbortedException,
             InvalidTransactionException {
-        System.out.println("Committing");
-        return true;
+        if (!xids.contains(xid))
+            throw new InvalidTransactionException(xid, "commit");
+        boolean flag = tm.commit(xid);
+        xids.remove(xid);
+        Util.storeObject(xids,xidsLog);
+        return flag;
     }
 
     public void abort(int xid)
@@ -104,6 +101,7 @@ public class WorkflowControllerImpl extends java.rmi.server.UnicastRemoteObject 
             throw new InvalidTransactionException(xid, "abort");
         tm.abort(xid);
         xids.remove(xid);
+        Util.storeObject(xids,xidsLog);
     }
 
     public ResourceItem queryItem(ResourceManager rm, int xid, String key)
