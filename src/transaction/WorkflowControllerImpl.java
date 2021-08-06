@@ -1,17 +1,14 @@
 package transaction;
 
 import lockmgr.DeadlockException;
-import transaction.entity.Car;
-import transaction.entity.Customer;
-import transaction.entity.Flight;
-import transaction.entity.Hotel;
+import transaction.entity.*;
 
 import java.rmi.Naming;
-import java.rmi.RMISecurityManager;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
-import java.rmi.server.ExportException;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Set;
 
 /**
@@ -164,8 +161,25 @@ public class WorkflowControllerImpl extends java.rmi.server.UnicastRemoteObject 
             throws RemoteException,
             TransactionAbortedException,
             InvalidTransactionException {
-        flightcounter = 0;
-        flightprice = 0;
+        if (!xids.contains(xid))
+            throw new InvalidTransactionException(xid, "deleteFlight");
+        if (flightNum == null)
+            return false;
+        ResourceItem resourceItem = queryItem(rmFlights, xid, flightNum);
+        if (resourceItem == null)
+            return false;
+        try {
+            Collection<ResourceItem> resvs = rmCustomers.query(xid, ResourceManager.TableNameReservations, Reservation.INDEX_RESERV_KEY, flightNum);
+            if (!resvs.isEmpty())
+                return false;
+            resourceItem.delete();
+            return rmFlights.delete(xid, rmFlights.getID(), flightNum);
+        } catch (InvalidIndexException e) {
+            System.err.println(e.getMessage());
+        } catch (DeadlockException e) {
+            abort(xid);
+            throw new TransactionAbortedException(xid, e.getMessage());
+        }
         return true;
     }
 
@@ -207,9 +221,26 @@ public class WorkflowControllerImpl extends java.rmi.server.UnicastRemoteObject 
             throws RemoteException,
             TransactionAbortedException,
             InvalidTransactionException {
-        roomscounter = 0;
-        roomsprice = 0;
-        return true;
+        if (!xids.contains(xid))
+            throw new InvalidTransactionException(xid, "deleteRooms");
+        if (location == null)
+            return false;
+        if (numRooms < 0)
+            return false;
+        ResourceItem resourceItem = queryItem(rmRooms, xid, location);
+        if (resourceItem == null)
+            return false;
+        Hotel hotel = (Hotel) resourceItem;
+        boolean deleted = hotel.deleteRooms(numRooms);
+        if (!deleted)
+            return false;
+        try {
+            return rmRooms.update(xid, rmRooms.getID(), location, hotel);
+        } catch (DeadlockException e) {
+            abort(xid);
+            throw new TransactionAbortedException(xid, e.getMessage());
+        }
+
     }
 
     public boolean addCars(int xid, String location, int numCars, int price)
@@ -250,9 +281,25 @@ public class WorkflowControllerImpl extends java.rmi.server.UnicastRemoteObject 
             throws RemoteException,
             TransactionAbortedException,
             InvalidTransactionException {
-        carscounter = 0;
-        carsprice = 0;
-        return true;
+        if (!xids.contains(xid))
+            throw new InvalidTransactionException(xid, "deleteCars");
+        if (location == null)
+            return false;
+        if (numCars < 0)
+            return false;
+        ResourceItem resourceItem = queryItem(rmCars, xid, location);
+        if (resourceItem == null)
+            return false;
+        Car car = (Car) resourceItem;
+        boolean deleted = car.deleteCars(numCars);
+        if (!deleted)
+            return false;
+        try {
+            return rmCars.update(xid, rmCars.getID(), location, car);
+        } catch (DeadlockException e) {
+            abort(xid);
+            throw new TransactionAbortedException(xid, e.getMessage());
+        }
     }
 
     public boolean newCustomer(int xid, String custName)
@@ -273,10 +320,65 @@ public class WorkflowControllerImpl extends java.rmi.server.UnicastRemoteObject 
         }
     }
 
+    public void unReserveAll(int xid, String custName)
+            throws RemoteException,
+            TransactionAbortedException,
+            InvalidTransactionException,
+            InvalidIndexException,
+            DeadlockException {
+        Collection<ResourceItem> resvs = rmCustomers.query(xid, ResourceManager.TableNameReservations, Reservation.INDEX_CUSTNAME, custName);
+        for (ResourceItem resouceItem : resvs) {
+            Reservation resv = (Reservation) resouceItem;
+            String resvKey = resv.getResvKey();
+            int resvType = resv.getResvType();
+            switch (resvType) {
+                case Reservation.RESERVATION_TYPE_FLIGHT: {
+                    Flight flight = (Flight) queryItem(rmFlights, xid, resvKey);
+                    flight.cancelResv();
+                    rmFlights.update(xid, rmFlights.getID(), resvKey, flight);
+                    break;
+                }
+                case Reservation.RESERVATION_TYPE_HOTEL: {
+                    Hotel hotel = (Hotel) queryItem(rmRooms, xid, resvKey);
+                    hotel.cancelResv();
+                    rmRooms.update(xid, rmRooms.getID(), resvKey, hotel);
+                    break;
+                }
+                case Reservation.RESERVATION_TYPE_CAR: {
+                    Car car = (Car) queryItem(rmCars, xid, resvKey);
+                    car.cancelResv();
+                    rmCars.update(xid, rmCars.getID(), resvKey, car);
+                }
+            }
+        }
+    }
+
     public boolean deleteCustomer(int xid, String custName)
             throws RemoteException,
             TransactionAbortedException,
             InvalidTransactionException {
+        if (!xids.contains(xid))
+            throw new InvalidTransactionException(xid, "deleteCustomer");
+        if (custName == null)
+            return false;
+        ResourceItem resourceItem = queryItem(rmCustomers, xid, custName);
+        if (resourceItem == null)
+            return false;
+        try {
+            rmCustomers.delete(xid, rmCustomers.getID(), custName);
+        } catch (DeadlockException e) {
+            abort(xid);
+            throw new TransactionAbortedException(xid, e.getMessage());
+        }
+        try {
+            unReserveAll(xid, custName);
+            rmCustomers.delete(xid, ResourceManager.TableNameReservations, Reservation.INDEX_CUSTNAME, custName);
+        } catch (DeadlockException e) {
+            abort(xid);
+            throw new TransactionAbortedException(xid, e.getMessage());
+        } catch (InvalidIndexException e) {
+            System.err.println(e.getMessage());
+        }
         return true;
     }
 

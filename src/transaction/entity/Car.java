@@ -1,9 +1,10 @@
 package transaction.entity;
 
 import transaction.InvalidIndexException;
-import transaction.ResourceItem;
 
-public class Car implements ResourceItem {
+import java.io.Serializable;
+
+public class Car implements ResourceItem, Serializable {
     private String location;
     private int price;
     private int numCars;
@@ -41,6 +42,14 @@ public class Car implements ResourceItem {
     public void addCars(int num) {
         numCars += num;
         numAvail += num;
+    }
+
+    public boolean deleteCars(int num) {
+        if (numAvail - num < 0)
+            return false;
+        numCars -= num;
+        numAvail -= num;
+        return true;
     }
 
     public boolean addResv() {

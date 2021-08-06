@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.Set;
 
 import lockmgr.DeadlockException;
+import transaction.entity.ResourceItem;
 
 /**
  * Interface for the Resource Manager of the Distributed Travel Reservation
@@ -78,4 +79,6 @@ public interface ResourceManager extends Remote {
 	public static final String RMINameCars = "RMCars";
 
 	public static final String RMINameCustomers = "RMCustomers";
+
+	public static final String TableNameReservations = "RMReservations";
 }

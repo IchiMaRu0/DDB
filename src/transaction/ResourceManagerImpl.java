@@ -14,11 +14,11 @@ import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Set;
 
 import lockmgr.DeadlockException;
 import lockmgr.LockManager;
+import transaction.entity.ResourceItem;
 
 /**
  * Resource Manager for the Distributed Travel Reservation System.

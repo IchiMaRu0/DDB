@@ -1,9 +1,10 @@
 package transaction.entity;
 
 import transaction.InvalidIndexException;
-import transaction.ResourceItem;
 
-public class Hotel implements ResourceItem {
+import java.io.Serializable;
+
+public class Hotel implements ResourceItem, Serializable {
     private String location;
     private int price;
     private int numRooms;
@@ -41,6 +42,14 @@ public class Hotel implements ResourceItem {
     public void addRooms(int num) {
         numRooms += num;
         numAvail += num;
+    }
+
+    public boolean deleteRooms(int num) {
+        if (numAvail - num < 0)
+            return false;
+        numRooms -= num;
+        numAvail -= num;
+        return true;
     }
 
     public boolean addResv() {

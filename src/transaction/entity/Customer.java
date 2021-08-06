@@ -1,9 +1,10 @@
 package transaction.entity;
 
 import transaction.InvalidIndexException;
-import transaction.ResourceItem;
 
-public class Customer implements ResourceItem {
+import java.io.Serializable;
+
+public class Customer implements ResourceItem, Serializable {
     private String customerName;
     private boolean isDeleted;
 

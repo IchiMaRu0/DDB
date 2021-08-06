@@ -1,9 +1,10 @@
 package transaction.entity;
 
 import transaction.InvalidIndexException;
-import transaction.ResourceItem;
 
-public class Flight implements ResourceItem {
+import java.io.Serializable;
+
+public class Flight implements ResourceItem, Serializable {
     private String flightNum;
     private int price;
     private int numSeats;
