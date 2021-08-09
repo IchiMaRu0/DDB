@@ -52,6 +52,7 @@ public class Client {
 	} 
 	catch (Exception e) {
 	    System.err.println("Received exception:" + e);
+	    e.printStackTrace();
 	    System.exit(1);
 	}
 

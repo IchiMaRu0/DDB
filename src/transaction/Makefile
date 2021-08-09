@@ -44,6 +44,7 @@ runclient : client
 
 clean :
 	$(RM) *.class
+	$(RM) ./entity/*.class
 
 %.class : %.java
 	javac -classpath $(PROJECTROOT) $<

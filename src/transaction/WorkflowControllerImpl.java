@@ -4,12 +4,14 @@ import lockmgr.DeadlockException;
 import transaction.entity.*;
 
 import java.rmi.Naming;
+import java.rmi.RMISecurityManager;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.ExportException;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -28,7 +30,7 @@ public class WorkflowControllerImpl extends java.rmi.server.UnicastRemoteObject 
     protected TransactionManager tm = null;
     static Registry _rmiRegistry = null;
 
-    protected Set<Integer> xids;
+    protected Set<Integer> xids = new HashSet<>();
     protected String xidsLog = "data/xids.log";
 
     public static void main(String args[]) {
@@ -640,13 +642,7 @@ public class WorkflowControllerImpl extends java.rmi.server.UnicastRemoteObject 
 
     public boolean dieNow(String who)
             throws RemoteException {
-        if (who.equals(TransactionManager.RMIName) ||
-                who.equals("ALL")) {
-            try {
-                tm.dieNow();
-            } catch (RemoteException e) {
-            }
-        }
+
         if (who.equals(ResourceManager.RMINameFlights) ||
                 who.equals("ALL")) {
             try {
@@ -672,6 +668,13 @@ public class WorkflowControllerImpl extends java.rmi.server.UnicastRemoteObject 
                 who.equals("ALL")) {
             try {
                 rmCustomers.dieNow();
+            } catch (RemoteException e) {
+            }
+        }
+        if (who.equals(TransactionManager.RMIName) ||
+                who.equals("ALL")) {
+            try {
+                tm.dieNow();
             } catch (RemoteException e) {
             }
         }
