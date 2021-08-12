@@ -33,7 +33,7 @@ test :
 	java -classpath $(PROJECTROOT) -DrmiPort=$(RMIREGPORT) -DtestName=DeadLock test.LaunchTest
 
 demo:
-	java -classpath $(PROJECTROOT)  -DtestName=Atomicity test.LaunchTest
+	java -classpath $(PROJECTROOT)  -DtestName=Consistency test.LaunchTest
 
 
 
