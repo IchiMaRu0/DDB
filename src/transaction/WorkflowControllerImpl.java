@@ -63,8 +63,14 @@ public class WorkflowControllerImpl extends java.rmi.server.UnicastRemoteObject 
         }
     }
 
-
+    private void recover() {
+        Object xids_tmp = Util.loadObject(xidsLog);
+        if (xids_tmp != null)
+            xids = (HashSet<Integer>) xids_tmp;
+    }
     public WorkflowControllerImpl() throws RemoteException {
+        recover();
+
         while (!reconnect()) {
             // would be better to sleep a while
             try {
@@ -496,18 +502,22 @@ public class WorkflowControllerImpl extends java.rmi.server.UnicastRemoteObject 
             Reservation resv = (Reservation) item;
             String resvKey = resv.getResvKey();
             int resvType = resv.getResvType();
+
             switch (resvType) {
                 case Reservation.RESERVATION_TYPE_FLIGHT: {
                     Flight flight = (Flight) queryItem(rmFlights, xid, resvKey);
                     total += flight.getPrice();
+                    break;
                 }
                 case Reservation.RESERVATION_TYPE_HOTEL: {
                     Hotel hotel = (Hotel) queryItem(rmRooms, xid, resvKey);
                     total += hotel.getPrice();
+                    break;
                 }
                 case Reservation.RESERVATION_TYPE_CAR: {
                     Car car = (Car) queryItem(rmCars, xid, resvKey);
                     total += car.getPrice();
+                    break;
                 }
             }
         }
@@ -713,17 +723,17 @@ public class WorkflowControllerImpl extends java.rmi.server.UnicastRemoteObject 
 
     public boolean dieRMAfterEnlist(String who)
             throws RemoteException {
-        return dieRMByTime(who,"AfterEnlist");
+        return dieRMByTime(who, "AfterEnlist");
     }
 
     public boolean dieRMBeforePrepare(String who)
             throws RemoteException {
-        return dieRMByTime(who,"BeforePrepare");
+        return dieRMByTime(who, "BeforePrepare");
     }
 
     public boolean dieRMAfterPrepare(String who)
             throws RemoteException {
-        return dieRMByTime(who,"AfterPrepare");
+        return dieRMByTime(who, "AfterPrepare");
     }
 
     public boolean dieTMBeforeCommit()
@@ -740,11 +750,11 @@ public class WorkflowControllerImpl extends java.rmi.server.UnicastRemoteObject 
 
     public boolean dieRMBeforeCommit(String who)
             throws RemoteException {
-        return dieRMByTime(who,"BeforeCommit");
+        return dieRMByTime(who, "BeforeCommit");
     }
 
     public boolean dieRMBeforeAbort(String who)
             throws RemoteException {
-        return dieRMByTime(who,"BeforeAbort");
+        return dieRMByTime(who, "BeforeAbort");
     }
 }

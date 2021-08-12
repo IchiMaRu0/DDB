@@ -12,6 +12,7 @@ public class Atomicity {
         try {
             int xid = wc.start();
             wc.addFlight(xid, "MU2219", 300, 700);
+            wc.addRooms(xid,"Shanghai",100,300);
             wc.dieTMBeforeCommit();
             try {
                 wc.commit(xid);
@@ -20,9 +21,14 @@ public class Atomicity {
             }
             TestUtil.launch("TM");
             wc.reconnect();
-            int numAvail = wc.queryFlight(xid, "MU2219");
-            if (numAvail != -1) {
-                System.err.println("Test fail: except -1, get " + numAvail);
+            int numAvail1 = wc.queryFlight(xid, "MU2219");
+            int numAvail2 = wc.queryRooms(xid,"Shanghai");
+            if (numAvail1 != -1) {
+                System.err.println("Test fail: except -1, get " + numAvail1);
+                TestUtil.shutDownAll(1);
+            }
+            if (numAvail2 != -1) {
+                System.err.println("Test fail: except -1, get " + numAvail2);
                 TestUtil.shutDownAll(1);
             }
             System.out.println("Test pass.");
