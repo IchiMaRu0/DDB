@@ -58,7 +58,7 @@ test :
 	java -classpath $(PROJECTROOT) -DrmiPort=$(RMIREGPORT) -DtestName=Lconc test.RunTest
 
 demo:
-	java -classpath $(PROJECTROOT)  -DtestName=Simple test.LaunchTest
+	java -classpath $(PROJECTROOT)  -DtestName=Atomicity test.LaunchTest
 
 
 
