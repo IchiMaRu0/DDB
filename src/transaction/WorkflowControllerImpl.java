@@ -68,6 +68,7 @@ public class WorkflowControllerImpl extends java.rmi.server.UnicastRemoteObject 
         if (xids_tmp != null)
             xids = (HashSet<Integer>) xids_tmp;
     }
+
     public WorkflowControllerImpl() throws RemoteException {
         recover();
 
@@ -695,7 +696,7 @@ public class WorkflowControllerImpl extends java.rmi.server.UnicastRemoteObject 
         return true;
     }
 
-    public boolean dieRMByTime(String who, String time) throws RemoteException {
+    private boolean dieRMByTime(String who, String time) throws RemoteException {
         switch (who) {
             case ResourceManager.RMINameFlights: {
                 rmFlights.setDieTime(time);
