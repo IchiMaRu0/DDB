@@ -50,5 +50,21 @@ public class Util {
         }
     }
 
+    public static Object loadObject(String path) {
+        File x = new File(path);
+        ObjectInputStream oin = null;
+        try {
+            oin = new ObjectInputStream(new FileInputStream(x));
+            return oin.readObject();
+        } catch (Exception e) {
+            return null;
+        } finally {
+            try {
+                if (oin != null)
+                    oin.close();
+            } catch (IOException e1) {
+            }
+        }
+    }
 
 }

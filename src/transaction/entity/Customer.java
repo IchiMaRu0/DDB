@@ -38,7 +38,7 @@ public class Customer implements ResourceItem, Serializable {
 
     @Override
     public Object getKey() {
-        return null;
+        return customerName;
     }
 
     @Override

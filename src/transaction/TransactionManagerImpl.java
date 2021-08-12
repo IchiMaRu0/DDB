@@ -76,6 +76,7 @@ public class TransactionManagerImpl extends java.rmi.server.UnicastRemoteObject 
 			persist(TM_XID2STATE_LOG, xid2state);
 		}
 		if (dieTime.equals("AfterCommit")) {
+			System.out.println("going to die...");
 			dieNow();
 		}
 
@@ -123,7 +124,7 @@ public class TransactionManagerImpl extends java.rmi.server.UnicastRemoteObject 
 				resourceManager.abort(xid);
 
 			} catch (Exception e) {
-				System.out.println("one rm down after prepare detected: " + resourceManager.getID());
+				System.out.println("one rm down after prepare detected: ");
 			}
 		}
 
@@ -174,6 +175,7 @@ public class TransactionManagerImpl extends java.rmi.server.UnicastRemoteObject 
 	}
     
 	public void enlist(int xid, ResourceManager rm) throws RemoteException, InvalidTransactionException {
+
 		if (!xid2rms.containsKey(xid)) {
 			rm.abort(xid);
 			return;
@@ -189,10 +191,12 @@ public class TransactionManagerImpl extends java.rmi.server.UnicastRemoteObject 
 			else if (xState.equals(TransactionState.COMMITTED)) {
 				// rm down before commit then recover
 				rm.commit(xid);
+				System.out.println("receive enlist from: " + rm.getID());
+
 				synchronized (xid2rms) {
 					Set<ResourceManager> rms = xid2rms.get(xid);
 					rms.remove(rm);
-
+					System.out.println(xid + "now has "+ rms.size() + "rms" );
 					// tm receive ack from all rms
 					if (rms.size() == 0) {
 						xid2rms.remove(xid);
@@ -209,6 +213,7 @@ public class TransactionManagerImpl extends java.rmi.server.UnicastRemoteObject 
 				synchronized (xid2rms) {
 					Set<ResourceManager> rms = xid2rms.get(xid);
 					rms.add(rm);
+					persist(TM_XID2RMS_LOG, xid2rms);
 				}
 			}
 		}
