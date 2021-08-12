@@ -33,11 +33,7 @@ test :
 	java -classpath $(PROJECTROOT) -DrmiPort=$(RMIREGPORT) -DtestName=DeadLock test.LaunchTest
 
 demo:
-<<<<<<< HEAD
 	java -classpath $(PROJECTROOT)  -DtestName=Atomicity test.LaunchTest
-=======
-	java -classpath $(PROJECTROOT)  -DtestName=DieWC test.LaunchTest
->>>>>>> c141ef1af51ce48ad7b44f46a7ba62fba46819c1
 
 
 
