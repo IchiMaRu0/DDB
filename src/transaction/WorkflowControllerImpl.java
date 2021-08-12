@@ -80,7 +80,7 @@ public class WorkflowControllerImpl extends java.rmi.server.UnicastRemoteObject 
     public int start() throws RemoteException {
         int xid = tm.start();
         xids.add(xid);
-        Util.storeObject(xids,xidsLog);
+        Util.storeObject(xids, xidsLog);
         return xid;
     }
 
@@ -92,7 +92,7 @@ public class WorkflowControllerImpl extends java.rmi.server.UnicastRemoteObject 
             throw new InvalidTransactionException(xid, "commit");
         boolean flag = tm.commit(xid);
         xids.remove(xid);
-        Util.storeObject(xids,xidsLog);
+        Util.storeObject(xids, xidsLog);
         return flag;
     }
 
@@ -103,7 +103,7 @@ public class WorkflowControllerImpl extends java.rmi.server.UnicastRemoteObject 
             throw new InvalidTransactionException(xid, "abort");
         tm.abort(xid);
         xids.remove(xid);
-        Util.storeObject(xids,xidsLog);
+        Util.storeObject(xids, xidsLog);
     }
 
     public ResourceItem queryItem(ResourceManager rm, int xid, String key)
@@ -685,38 +685,66 @@ public class WorkflowControllerImpl extends java.rmi.server.UnicastRemoteObject 
         return true;
     }
 
+    public boolean dieRMByTime(String who, String time) throws RemoteException {
+        switch (who) {
+            case ResourceManager.RMINameFlights: {
+                rmFlights.setDieTime(time);
+                break;
+            }
+            case ResourceManager.RMINameRooms: {
+                rmRooms.setDieTime(time);
+                break;
+            }
+            case ResourceManager.RMINameCars: {
+                rmCars.setDieTime(time);
+                break;
+            }
+            case ResourceManager.RMINameCustomers: {
+                rmCustomers.setDieTime(time);
+                break;
+            }
+            default: {
+                System.err.println("Invalid RM: " + who);
+                return false;
+            }
+        }
+        return true;
+    }
+
     public boolean dieRMAfterEnlist(String who)
             throws RemoteException {
-        return true;
+        return dieRMByTime(who,"AfterEnlist");
     }
 
     public boolean dieRMBeforePrepare(String who)
             throws RemoteException {
-        return true;
+        return dieRMByTime(who,"BeforePrepare");
     }
 
     public boolean dieRMAfterPrepare(String who)
             throws RemoteException {
-        return true;
+        return dieRMByTime(who,"AfterPrepare");
     }
 
     public boolean dieTMBeforeCommit()
             throws RemoteException {
+        tm.setDieTime("BeforeCommit");
         return true;
     }
 
     public boolean dieTMAfterCommit()
             throws RemoteException {
+        tm.setDieTime("AfterCommit");
         return true;
     }
 
     public boolean dieRMBeforeCommit(String who)
             throws RemoteException {
-        return true;
+        return dieRMByTime(who,"BeforeCommit");
     }
 
     public boolean dieRMBeforeAbort(String who)
             throws RemoteException {
-        return true;
+        return dieRMByTime(who,"BeforeAbort");
     }
 }
