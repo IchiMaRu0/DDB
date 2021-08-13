@@ -15,12 +15,22 @@ public class AddDelete {
 
             xid = wc.start();
             int n = wc.queryRooms(xid, "Shanghai");
+            int p = wc.queryRoomsPrice(xid, "Shanghai");
             if (n != 100) {
                 System.out.println("Test Fail.");
                 TestUtil.shutDownAll(1);
             }
+            if (p != 300) {
+                System.out.println("Test Fail.");
+                TestUtil.shutDownAll(1);
+            }
             n = wc.queryCars(xid, "Shanghai");
+            p = wc.queryCarsPrice(xid, "Shanghai");
             if (n != 200) {
+                System.out.println("Test Fail.");
+                TestUtil.shutDownAll(1);
+            }
+            if (p != 800) {
                 System.out.println("Test Fail.");
                 TestUtil.shutDownAll(1);
             }

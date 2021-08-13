@@ -19,7 +19,9 @@ test:
 	java -classpath $(PROJECTROOT) -DrmiPort=$(RMIREGPORT) -DtestName=Durability test.LaunchTest
 
 #Function Test
+	java -classpath $(PROJECTROOT) -DrmiPort=$(RMIREGPORT) -DtestName=Invalidxid test.LaunchTest
 	java -classpath $(PROJECTROOT) -DrmiPort=$(RMIREGPORT) -DtestName=AddDelete test.LaunchTest
+	java -classpath $(PROJECTROOT) -DrmiPort=$(RMIREGPORT) -DtestName=AddAbort test.LaunchTest
 	java -classpath $(PROJECTROOT) -DrmiPort=$(RMIREGPORT) -DtestName=QueryforBill test.LaunchTest
 
 #Die Test:
@@ -38,7 +40,7 @@ test:
 	java -classpath $(PROJECTROOT) -DrmiPort=$(RMIREGPORT) -DtestName=DeadLock test.LaunchTest
 
 demo:
-	java -classpath $(PROJECTROOT)  -DtestName=AddDelete test.LaunchTest
+	java -classpath $(PROJECTROOT)  -DtestName=AddAbort test.LaunchTest
 
 
 
