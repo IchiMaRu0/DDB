@@ -8,14 +8,21 @@ clean :
 all :
 	javac -classpath $(PROJECTROOT) *.java
 
-test :
+test:
 #Basic Test:
 
 
 #ACID Test:
-
+	java -classpath $(PROJECTROOT) -DrmiPort=$(RMIREGPORT) -DtestName=Atomicity test.LaunchTest
+	java -classpath $(PROJECTROOT) -DrmiPort=$(RMIREGPORT) -DtestName=Consistency test.LaunchTest
+	java -classpath $(PROJECTROOT) -DrmiPort=$(RMIREGPORT) -DtestName=Isolation test.LaunchTest
+	java -classpath $(PROJECTROOT) -DrmiPort=$(RMIREGPORT) -DtestName=Durability test.LaunchTest
 
 #Function Test
+	java -classpath $(PROJECTROOT) -DrmiPort=$(RMIREGPORT) -DtestName=Invalidxid test.LaunchTest
+	java -classpath $(PROJECTROOT) -DrmiPort=$(RMIREGPORT) -DtestName=AddDelete test.LaunchTest
+	java -classpath $(PROJECTROOT) -DrmiPort=$(RMIREGPORT) -DtestName=AddAbort test.LaunchTest
+	java -classpath $(PROJECTROOT) -DrmiPort=$(RMIREGPORT) -DtestName=QueryforBill test.LaunchTest
 
 #Die Test:
 	java -classpath $(PROJECTROOT) -DrmiPort=$(RMIREGPORT) -DtestName=DieRMAfterEnlist test.LaunchTest
@@ -33,7 +40,7 @@ test :
 	java -classpath $(PROJECTROOT) -DrmiPort=$(RMIREGPORT) -DtestName=DeadLock test.LaunchTest
 
 demo:
-	java -classpath $(PROJECTROOT)  -DtestName=DieWC test.LaunchTest
+	java -classpath $(PROJECTROOT)  -DtestName=AddAbort test.LaunchTest
 
 
 

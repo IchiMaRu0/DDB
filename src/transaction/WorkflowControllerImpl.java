@@ -68,6 +68,7 @@ public class WorkflowControllerImpl extends java.rmi.server.UnicastRemoteObject 
         if (xids_tmp != null)
             xids = (HashSet<Integer>) xids_tmp;
     }
+
     public WorkflowControllerImpl() throws RemoteException {
         recover();
 
@@ -86,7 +87,7 @@ public class WorkflowControllerImpl extends java.rmi.server.UnicastRemoteObject 
     public int start() throws RemoteException {
         int xid = tm.start();
         xids.add(xid);
-        Util.storeObject(xids,xidsLog);
+        Util.storeObject(xids, xidsLog);
         return xid;
     }
 
@@ -98,7 +99,7 @@ public class WorkflowControllerImpl extends java.rmi.server.UnicastRemoteObject 
             throw new InvalidTransactionException(xid, "commit");
         boolean flag = tm.commit(xid);
         xids.remove(xid);
-        Util.storeObject(xids,xidsLog);
+        Util.storeObject(xids, xidsLog);
         return flag;
     }
 
@@ -109,7 +110,7 @@ public class WorkflowControllerImpl extends java.rmi.server.UnicastRemoteObject 
             throw new InvalidTransactionException(xid, "abort");
         tm.abort(xid);
         xids.remove(xid);
-        Util.storeObject(xids,xidsLog);
+        Util.storeObject(xids, xidsLog);
     }
 
     public ResourceItem queryItem(ResourceManager rm, int xid, String key)
@@ -695,6 +696,32 @@ public class WorkflowControllerImpl extends java.rmi.server.UnicastRemoteObject 
         return true;
     }
 
+    private boolean dieRMByTime(String who, String time) throws RemoteException {
+        switch (who) {
+            case ResourceManager.RMINameFlights: {
+                rmFlights.setDieTime(time);
+                break;
+            }
+            case ResourceManager.RMINameRooms: {
+                rmRooms.setDieTime(time);
+                break;
+            }
+            case ResourceManager.RMINameCars: {
+                rmCars.setDieTime(time);
+                break;
+            }
+            case ResourceManager.RMINameCustomers: {
+                rmCustomers.setDieTime(time);
+                break;
+            }
+            default: {
+                System.err.println("Invalid RM: " + who);
+                return false;
+            }
+        }
+        return true;
+    }
+
     public boolean dieRMAfterEnlist(String who)
             throws RemoteException {
         return dieRMByTime(who, "AfterEnlist");
@@ -730,31 +757,5 @@ public class WorkflowControllerImpl extends java.rmi.server.UnicastRemoteObject 
     public boolean dieRMBeforeAbort(String who)
             throws RemoteException {
         return dieRMByTime(who, "BeforeAbort");
-    }
-
-    private boolean dieRMByTime(String who, String time) throws RemoteException {
-        switch (who) {
-            case ResourceManager.RMINameFlights: {
-                rmFlights.setDieTime(time);
-                break;
-            }
-            case ResourceManager.RMINameCars: {
-                rmCars.setDieTime(time);
-                break;
-            }
-            case ResourceManager.RMINameCustomers: {
-                rmCustomers.setDieTime(time);
-                break;
-            }
-            case ResourceManager.RMINameRooms: {
-                rmRooms.setDieTime(time);
-                break;
-            }
-            default: {
-                System.err.println("Invalid RM: " + who);
-                return false;
-            }
-        }
-        return true;
     }
 }
